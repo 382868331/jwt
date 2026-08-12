@@ -1,6 +1,8 @@
 package jwt_test
 
 import (
+	"crypto"
+	"errors"
 	"os"
 	"reflect"
 	"strings"
@@ -8,6 +10,26 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 )
+
+func TestHMACSignReturnsSpecificErrors(t *testing.T) {
+	t.Run("unavailable hash", func(t *testing.T) {
+		method := &jwt.SigningMethodHMAC{Name: "unavailable", Hash: crypto.Hash(0)}
+		_, err := method.Sign("payload", []byte("secret"))
+		if !errors.Is(err, jwt.ErrHashUnavailable) {
+			t.Fatalf("expected ErrHashUnavailable, got %v", err)
+		}
+	})
+
+	t.Run("invalid key type", func(t *testing.T) {
+		_, err := jwt.SigningMethodHS256.Sign("payload", "secret")
+		if !errors.Is(err, jwt.ErrInvalidKeyType) {
+			t.Fatalf("expected ErrInvalidKeyType, got %v", err)
+		}
+		if err == jwt.ErrInvalidKeyType {
+			t.Fatalf("expected contextual error, got bare ErrInvalidKeyType")
+		}
+	})
+}
 
 var hmacTestData = []struct {
 	name        string

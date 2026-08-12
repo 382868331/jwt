@@ -2,11 +2,30 @@ package jwt_test
 
 import (
 	"encoding/json"
+	"math"
 	"testing"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 )
+
+func TestNumericDateUnmarshalLargeSeconds(t *testing.T) {
+	oldPrecision := jwt.TimePrecision
+	t.Cleanup(func() { jwt.TimePrecision = oldPrecision })
+	jwt.TimePrecision = time.Nanosecond
+
+	var date jwt.NumericDate
+	value := "9223372036.5"
+	if err := json.Unmarshal([]byte(value), &date); err != nil {
+		t.Fatal(err)
+	}
+	if got := date.Unix(); got != int64(math.Floor(9223372036.5)) {
+		t.Fatalf("unexpected Unix seconds: got %d want 9223372036", got)
+	}
+	if got := date.Nanosecond(); got != 500000000 {
+		t.Fatalf("unexpected nanoseconds: got %d want 500000000", got)
+	}
+}
 
 func TestNumericDate(t *testing.T) {
 	var s struct {
